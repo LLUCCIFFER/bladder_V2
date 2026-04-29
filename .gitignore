@@ -1,0 +1,54 @@
+# Python/cache
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments/editors
+.env
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+
+# Local logs
+*.log
+
+# Large/generated experiment artifacts
+*_outputs/
+*_outputs_*/
+*_outputs_backup*/
+*_cache/
+*_exports/
+_tmp*/
+results_bundle.zip
+*.zip
+*.tar
+*.tar.gz
+*.gz
+*.rar
+
+# Embeddings, model checkpoints, arrays, and binary dumps
+*.npy
+*.npz
+*.pkl
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Generated plots/images
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+
+# Generated tables are kept local unless explicitly force-added.
+*.csv
+
+# Local diagnostic generated files
+biomedclip_cpu_check.json
