@@ -89,6 +89,19 @@ python ebtc_discriminative_whitelist_cycl.py \
   --patience 15
 ```
 
+Current recommended lightweight setting:
+
+```bash
+python ebtc_discriminative_whitelist_cycl.py \
+  --top-ks 10 \
+  --seeds 42,43,44 \
+  --epochs 40 \
+  --patience 8 \
+  --lambda-cycl 0 \
+  --lambda-align 0.05 \
+  --num-threads 2
+```
+
 Default output:
 
 ```text

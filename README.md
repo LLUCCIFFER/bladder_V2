@@ -120,6 +120,17 @@ python ebtc_discriminative_whitelist_cycl.py \
   --seeds 42,43,44
 ```
 
+Current recommended lightweight setting from the follow-up ablation:
+
+```bash
+python ebtc_discriminative_whitelist_cycl.py \
+  --top-ks 10 \
+  --seeds 42,43,44 \
+  --lambda-cycl 0 \
+  --lambda-align 0.05 \
+  --num-threads 2
+```
+
 ## Reproducibility
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for the expected data

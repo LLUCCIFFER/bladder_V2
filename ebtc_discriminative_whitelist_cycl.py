@@ -112,6 +112,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda-cycl", type=float, default=0.05)
     parser.add_argument("--lambda-align", type=float, default=0.2)
     parser.add_argument("--tau", type=float, default=0.1)
+    parser.add_argument(
+        "--num-threads",
+        type=int,
+        default=2,
+        help="Limit PyTorch CPU threads. Use 0 to leave the runtime default unchanged.",
+    )
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     return parser.parse_args()
 
@@ -901,6 +907,12 @@ def write_report(
 
 def main() -> None:
     args = parse_args()
+    if args.num_threads > 0:
+        torch.set_num_threads(args.num_threads)
+        try:
+            torch.set_num_interop_threads(args.num_threads)
+        except RuntimeError:
+            pass
     ensure_dir(args.output_dir)
     top_ks = parse_int_list(args.top_ks)
     seeds = parse_int_list(args.seeds)

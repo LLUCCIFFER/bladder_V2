@@ -23,6 +23,7 @@ env/
 *_outputs/
 *_outputs_*/
 *_outputs_backup*/
+*_improved*/
 *_cache/
 *_exports/
 _tmp*/
