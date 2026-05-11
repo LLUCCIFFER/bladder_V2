@@ -12,14 +12,15 @@ from typing import Any
 import matplotlib
 import numpy as np
 
+from ebtc_project_paths import EXPERIMENT_DIR, FILTERING_ONLY_OUTPUT_DIR, PROJECT_ROOT
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-EXPERIMENT_DIR = Path("/home/kunet.ae/100069491/experiment")
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
-NEWCODE_DIR = Path("/home/kunet.ae/100069491/newcode")
+NEWCODE_DIR = PROJECT_ROOT
 if str(NEWCODE_DIR) not in sys.path:
     sys.path.insert(0, str(NEWCODE_DIR))
 
@@ -43,9 +44,7 @@ from ebtc_cycl_retrieval_stage_revised import (  # noqa: E402
 )
 
 
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_revised_filtering_only_outputs"
-)
+DEFAULT_OUTPUT_DIR = FILTERING_ONLY_OUTPUT_DIR
 
 DEFAULT_CLASS_WEIGHTS: dict[str, dict[str, float]] = {
     "HGC": {"LGC": 0.5, "NTL": 0.3, "NST": 0.2},

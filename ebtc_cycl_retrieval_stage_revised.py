@@ -17,14 +17,22 @@ import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
 
+from ebtc_project_paths import (
+    BACKUP_EMBEDDINGS_DIR,
+    CYCL_REVISED_OUTPUT_DIR,
+    CYCL_STAGE_OUTPUT_DIR,
+    EXPERIMENT_DIR,
+    OFFICIAL_EMBEDDINGS_DIR,
+    PROJECT_ROOT,
+)
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-EXPERIMENT_DIR = Path("/home/kunet.ae/100069491/experiment")
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
-NEWCODE_DIR = Path("/home/kunet.ae/100069491/newcode")
+NEWCODE_DIR = PROJECT_ROOT
 if str(NEWCODE_DIR) not in sys.path:
     sys.path.insert(0, str(NEWCODE_DIR))
 
@@ -53,17 +61,11 @@ from ebtc_concept_experiment import build_manifest, create_splits  # noqa: E402
 
 
 DEFAULT_FILTERED_TOP300_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_multiseed_outputs/banks/filtered_top300"
+    CYCL_STAGE_OUTPUT_DIR / "banks" / "filtered_top300"
 )
-DEFAULT_EMBEDDINGS_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_official_split_embedding_cache/embeddings"
-)
-DEFAULT_BACKUP_EMBEDDINGS_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs_backup_groupaware_20260414/embeddings"
-)
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs"
-)
+DEFAULT_EMBEDDINGS_DIR = OFFICIAL_EMBEDDINGS_DIR
+DEFAULT_BACKUP_EMBEDDINGS_DIR = BACKUP_EMBEDDINGS_DIR
+DEFAULT_OUTPUT_DIR = CYCL_REVISED_OUTPUT_DIR
 EPS = 1e-6
 TOP_N_CHOICES = (30, 20, 10)
 

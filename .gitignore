@@ -8,9 +8,11 @@ __pycache__/
 
 # Environments/editors
 .env
+.env.*
 .venv/
 venv/
 env/
+.cache/
 .idea/
 .vscode/
 
@@ -24,6 +26,8 @@ env/
 *_cache/
 *_exports/
 _tmp*/
+runs/
+wandb/
 results_bundle.zip
 *.zip
 *.tar

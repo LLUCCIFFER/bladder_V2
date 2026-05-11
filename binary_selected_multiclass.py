@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -10,9 +9,10 @@ from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedGroupKFold
 
 import ebtc_concept_experiment as exp
+from ebtc_project_paths import CONCEPT_EXPERIMENT_OUTPUT_DIR
 
 
-OUTPUT_DIR = Path("/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs")
+OUTPUT_DIR = CONCEPT_EXPERIMENT_OUTPUT_DIR
 REPORTS_DIR = OUTPUT_DIR / "reports"
 FILTER_ONLY_FEATURE_SETS = [name for name in exp.BINARY_FEATURE_SETS if name != "raw"]
 ADAPTIVE_MULTICLASS_CLASSIFIERS = ["logreg"]

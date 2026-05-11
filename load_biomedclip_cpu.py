@@ -1,4 +1,4 @@
-#!/home/kunet.ae/100069491/.conda/envs/torch/bin/python
+#!/usr/bin/env python3
 import argparse
 import json
 from pathlib import Path
@@ -8,6 +8,8 @@ from PIL import Image
 from open_clip import create_model_and_transforms, get_tokenizer
 from open_clip.factory import _MODEL_CONFIGS
 from transformers import AutoConfig
+
+from ebtc_project_paths import BIOMEDBERT_TEXT_CONFIG_DIR, MODEL_DIR, PROJECT_ROOT
 
 
 def prepare_text_config_cache(source_model_name: str, local_text_config_dir: Path):
@@ -77,16 +79,13 @@ def main():
     parser.add_argument(
         "--model-dir",
         type=Path,
-        default=Path("/dpc/kunf0084/bladder/model"),
+        default=MODEL_DIR,
         help="Directory containing open_clip_config.json and open_clip_pytorch_model.bin",
     )
     parser.add_argument(
         "--image-path",
         type=Path,
-        default=Path(
-            "/dpc/kunf0084/bladder/model/example_data/biomed_image_classification_example_data/"
-            "adenocarcinoma_histopathology.jpg"
-        ),
+        default=MODEL_DIR / "example_data/biomed_image_classification_example_data/adenocarcinoma_histopathology.jpg",
         help="Image used for a quick CPU inference check.",
     )
     parser.add_argument(
@@ -103,13 +102,13 @@ def main():
     parser.add_argument(
         "--output-json",
         type=Path,
-        default=Path("/home/kunet.ae/100069491/newcode/biomedclip_cpu_check.json"),
+        default=PROJECT_ROOT / "biomedclip_cpu_check.json",
         help="Where to save the validation result.",
     )
     parser.add_argument(
         "--local-text-config-dir",
         type=Path,
-        default=Path("/home/kunet.ae/100069491/newcode/biomedbert_text_config"),
+        default=BIOMEDBERT_TEXT_CONFIG_DIR,
         help="Local cache directory for the text encoder config.json.",
     )
     args = parser.parse_args()

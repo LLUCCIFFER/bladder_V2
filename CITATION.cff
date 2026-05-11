@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+title: "EBTC Concept Bottleneck / CyCL"
+message: "If you use this code, please cite the associated project or paper."
+type: software
+authors:
+  - name: "LLUCCIFFER"
+repository-code: "https://github.com/LLUCCIFFER/bladder_V2"
+license: "MIT"
+version: "0.1.0"
+

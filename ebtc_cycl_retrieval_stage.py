@@ -15,8 +15,8 @@ import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
 
+from ebtc_project_paths import CONCEPT_EXPERIMENT_OUTPUT_DIR, CYCL_STAGE_OUTPUT_DIR, EXPERIMENT_DIR
 
-EXPERIMENT_DIR = Path("/home/kunet.ae/100069491/experiment")
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
 
@@ -44,14 +44,10 @@ from etbc_wli_train_cbm_cycl import (  # noqa: E402
 
 
 DEFAULT_FILTERED_TOP300_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs/final_concept_banks_officialsplit/filtered_top300"
+    CONCEPT_EXPERIMENT_OUTPUT_DIR / "final_concept_banks_officialsplit" / "filtered_top300"
 )
-DEFAULT_EMBEDDINGS_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs/embeddings"
-)
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_multiseed_outputs"
-)
+DEFAULT_EMBEDDINGS_DIR = CONCEPT_EXPERIMENT_OUTPUT_DIR / "embeddings"
+DEFAULT_OUTPUT_DIR = CYCL_STAGE_OUTPUT_DIR
 EPS = 1e-6
 TOP_N_CHOICES = (30, 20, 10)
 

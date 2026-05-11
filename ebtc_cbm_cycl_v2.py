@@ -20,6 +20,16 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
+from ebtc_project_paths import (
+    CBM_CYCL_V2_OUTPUT_DIR,
+    EXPERIMENT_DIR,
+    FILTERED_TOP300_BANK_DIR,
+    OFFICIAL_EMBEDDINGS_DIR,
+    PROJECT_ROOT,
+    RETRIEVAL_TOP10_BANK_DIR,
+    RETRIEVAL_TOP10_DISC_BANK_DIR,
+)
+
 try:
     from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 except ImportError:  # pragma: no cover - fallback keeps the script usable without sklearn.
@@ -57,21 +67,11 @@ from ebtc_cbm_cycl_v2_lib import (
 )
 
 
-DEFAULT_BANK_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/retrieval_top10_per_class_disc"
-)
-DEFAULT_RETRIEVAL_TOP10_BANK_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/retrieval_top10_per_class"
-)
-DEFAULT_FILTERED_TOP300_BANK_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/filtered_top300"
-)
-DEFAULT_EMBEDDINGS_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_official_split_embedding_cache/embeddings"
-)
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cbm_cycl_v2_outputs/outputs_v2"
-)
+DEFAULT_BANK_DIR = RETRIEVAL_TOP10_DISC_BANK_DIR
+DEFAULT_RETRIEVAL_TOP10_BANK_DIR = RETRIEVAL_TOP10_BANK_DIR
+DEFAULT_FILTERED_TOP300_BANK_DIR = FILTERED_TOP300_BANK_DIR
+DEFAULT_EMBEDDINGS_DIR = OFFICIAL_EMBEDDINGS_DIR
+DEFAULT_OUTPUT_DIR = CBM_CYCL_V2_OUTPUT_DIR
 DEFAULT_FORMAL_4GROUPS_DIR = DEFAULT_OUTPUT_DIR / "formal_4groups_3seeds"
 
 
@@ -463,8 +463,8 @@ def resolve_device(device: str) -> str:
 
 
 def import_biomedclip_loader() -> Any:
-    newcode_dir = Path("/home/kunet.ae/100069491/newcode")
-    experiment_dir = Path("/home/kunet.ae/100069491/experiment")
+    newcode_dir = PROJECT_ROOT
+    experiment_dir = EXPERIMENT_DIR
     for path in [newcode_dir, experiment_dir]:
         if str(path) not in sys.path:
             sys.path.insert(0, str(path))

@@ -1,15 +1,15 @@
-#!/home/kunet.ae/100069491/.conda/envs/torch/bin/python
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from ebtc_project_paths import CONCEPT_EXPERIMENT_OUTPUT_DIR, PROJECT_ROOT
 
-ROOT = Path("/home/kunet.ae/100069491/newcode")
-OUTPUT_DIR = ROOT / "ebtc_concept_experiment_outputs"
+ROOT = PROJECT_ROOT
+OUTPUT_DIR = CONCEPT_EXPERIMENT_OUTPUT_DIR
 sys.path.insert(0, str(ROOT))
 
 import ebtc_concept_experiment as exp

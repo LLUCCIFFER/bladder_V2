@@ -1,4 +1,4 @@
-#!/home/kunet.ae/100069491/.conda/envs/torch/bin/python
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import json
@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from ebtc_project_paths import CONCEPT_EXPERIMENT_OUTPUT_DIR
 
-OUTPUT_ROOT = Path("/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs")
+OUTPUT_ROOT = CONCEPT_EXPERIMENT_OUTPUT_DIR
 REPORTS_DIR = OUTPUT_ROOT / "reports"
 EXPORT_DIR = OUTPUT_ROOT / "final_concept_banks_officialsplit"
 CLASSES = ["HGC", "LGC", "NTL", "NST"]

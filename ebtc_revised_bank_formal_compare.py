@@ -13,11 +13,18 @@ from typing import Any
 import numpy as np
 import torch
 
+from ebtc_project_paths import (
+    CYCL_REVISED_OUTPUT_DIR,
+    CYCL_STAGE_OUTPUT_DIR,
+    FORMAL_COMPARE_OUTPUT_DIR,
+    PROJECT_ROOT,
+    EXPERIMENT_DIR,
+    WEIGHTED_SYM10_BANK_DIR,
+)
 
-EXPERIMENT_DIR = Path("/home/kunet.ae/100069491/experiment")
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
-NEWCODE_DIR = Path("/home/kunet.ae/100069491/newcode")
+NEWCODE_DIR = PROJECT_ROOT
 if str(NEWCODE_DIR) not in sys.path:
     sys.path.insert(0, str(NEWCODE_DIR))
 
@@ -40,26 +47,24 @@ from ebtc_cycl_retrieval_stage_revised import (  # noqa: E402
 )
 
 
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_revised_bank_formal_compare_outputs"
-)
+DEFAULT_OUTPUT_DIR = FORMAL_COMPARE_OUTPUT_DIR
 
 BANK_PATH_CANDIDATES: dict[str, list[Path]] = {
     "filtered_top300": [
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/filtered_top300"),
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_multiseed_outputs/banks/filtered_top300"),
+        CYCL_REVISED_OUTPUT_DIR / "banks" / "filtered_top300",
+        CYCL_STAGE_OUTPUT_DIR / "banks" / "filtered_top300",
     ],
     "retrieval_top10_per_class": [
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/retrieval_top10_per_class"),
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_multiseed_outputs/banks/retrieval_top10_per_class"),
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_outputs/banks/retrieval_top10_per_class"),
+        CYCL_REVISED_OUTPUT_DIR / "banks" / "retrieval_top10_per_class",
+        CYCL_STAGE_OUTPUT_DIR / "banks" / "retrieval_top10_per_class",
+        PROJECT_ROOT / "ebtc_cycl_retrieval_stage_outputs" / "banks" / "retrieval_top10_per_class",
     ],
     "old_disc_sym10": [
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/retrieval_top10_per_class_disc"),
-        Path("/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_shortdebug_outputs/banks/retrieval_top10_per_class_disc"),
+        CYCL_REVISED_OUTPUT_DIR / "banks" / "retrieval_top10_per_class_disc",
+        PROJECT_ROOT / "ebtc_cycl_retrieval_stage_revised_shortdebug_outputs" / "banks" / "retrieval_top10_per_class_disc",
     ],
     "weighted_sym10": [
-        Path("/home/kunet.ae/100069491/newcode/ebtc_revised_filtering_only_outputs/banks/bank_weighted_sym10"),
+        WEIGHTED_SYM10_BANK_DIR,
     ],
 }
 
@@ -450,7 +455,7 @@ def write_report(
             "",
             "## Training Setup",
             "",
-            f"- Revised trainer: `/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised.py` plus `/home/kunet.ae/100069491/experiment/etbc_wli_train_cbm_cycl.py`.",
+            f"- Revised trainer: `{PROJECT_ROOT / 'ebtc_cycl_retrieval_stage_revised.py'}` plus `{EXPERIMENT_DIR / 'etbc_wli_train_cbm_cycl.py'}`.",
             f"- Seeds: `{args.seeds}`.",
             f"- Schedule: `{args.schedule}`, warmup={args.warmup_epochs}, joint={args.joint_epochs}.",
             f"- Views: `{args.num_views}`, color_aug={args.use_color_aug}, geom_aug={args.use_geom_aug}.",

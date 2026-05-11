@@ -1,4 +1,4 @@
-#!/home/kunet.ae/100069491/.conda/envs/torch/bin/python
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
@@ -40,12 +40,16 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformers import AutoConfig
 
+from ebtc_project_paths import (
+    BIOMEDBERT_TEXT_CONFIG_DIR,
+    CONCEPT_DIR,
+    CONCEPT_EXPERIMENT_OUTPUT_DIR,
+    DATASET_ROOT,
+    MODEL_DIR,
+)
 
-DATASET_ROOT = Path("/dpc/kunf0084/bladder/data/EBTC")
 ANNOTATIONS_PATH = DATASET_ROOT / "annotations.csv"
-MODEL_DIR = Path("/dpc/kunf0084/bladder/model")
-CONCEPT_DIR = Path("/home/kunet.ae/100069491/experiment/baseconcept")
-DEFAULT_OUTPUT_DIR = Path("/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs")
+DEFAULT_OUTPUT_DIR = CONCEPT_EXPERIMENT_OUTPUT_DIR
 CLASSES = ["HGC", "LGC", "NTL", "NST"]
 SEED = 20260411
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
@@ -1344,7 +1348,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--local-text-config-dir",
         type=Path,
-        default=Path("/home/kunet.ae/100069491/newcode/biomedbert_text_config"),
+        default=BIOMEDBERT_TEXT_CONFIG_DIR,
     )
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     parser.add_argument("--image-batch-size", type=int, default=16)

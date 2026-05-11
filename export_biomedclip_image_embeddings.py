@@ -17,13 +17,11 @@ from typing import Iterable
 
 import numpy as np
 
+from ebtc_project_paths import IMAGE_EMBEDDING_EXPORT_DIR, OFFICIAL_EMBEDDINGS_DIR
 
-DEFAULT_EMBEDDINGS_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_official_split_embedding_cache/embeddings"
-)
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_image_embedding_exports"
-)
+
+DEFAULT_EMBEDDINGS_DIR = OFFICIAL_EMBEDDINGS_DIR
+DEFAULT_OUTPUT_DIR = IMAGE_EMBEDDING_EXPORT_DIR
 SPLITS = ("train", "val", "test")
 
 

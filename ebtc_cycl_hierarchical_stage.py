@@ -18,14 +18,21 @@ from PIL import Image
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, recall_score, roc_auc_score
 from torch.utils.data import DataLoader, Dataset
 
+from ebtc_project_paths import (
+    BACKUP_EMBEDDINGS_DIR,
+    EXPERIMENT_DIR,
+    HIERARCHICAL_OUTPUT_DIR,
+    PROJECT_ROOT,
+    RETRIEVAL_TOP10_DISC_BANK_DIR,
+)
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
-EXPERIMENT_DIR = Path("/home/kunet.ae/100069491/experiment")
 if str(EXPERIMENT_DIR) not in sys.path:
     sys.path.insert(0, str(EXPERIMENT_DIR))
-NEWCODE_DIR = Path("/home/kunet.ae/100069491/newcode")
+NEWCODE_DIR = PROJECT_ROOT
 if str(NEWCODE_DIR) not in sys.path:
     sys.path.insert(0, str(NEWCODE_DIR))
 
@@ -56,15 +63,9 @@ from ebtc_cycl_retrieval_stage_revised import (  # noqa: E402
 )
 
 
-DEFAULT_BANK_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_retrieval_stage_revised_outputs/banks/retrieval_top10_per_class_disc"
-)
-DEFAULT_BACKUP_EMBEDDINGS_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_concept_experiment_outputs_backup_groupaware_20260414/embeddings"
-)
-DEFAULT_OUTPUT_DIR = Path(
-    "/home/kunet.ae/100069491/newcode/ebtc_cycl_hierarchical_stage_outputs"
-)
+DEFAULT_BANK_DIR = RETRIEVAL_TOP10_DISC_BANK_DIR
+DEFAULT_BACKUP_EMBEDDINGS_DIR = BACKUP_EMBEDDINGS_DIR
+DEFAULT_OUTPUT_DIR = HIERARCHICAL_OUTPUT_DIR
 ORIGINAL_CLASS_MAP = {code: name for code, name in zip(train_mod.LABEL_CODES, train_mod.CLASS_NAMES)}
 ORIGINAL_LABEL_CODES = list(ORIGINAL_CLASS_MAP.keys())
 EPS = 1e-6
