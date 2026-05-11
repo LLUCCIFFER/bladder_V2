@@ -69,9 +69,48 @@ python ebtc_cbm_cycl_v2.py formal-it-compare \
   --n-views 4
 ```
 
+## 8. Run Discriminative Whitelist + Concept-Profile CyCL
+
+This stage starts from the fixed `filtered_top300` bank and computes:
+
+- concept-wise own-class mean similarity,
+- hardest-negative class and margin,
+- top-k whitelists for `k=5,10,20,30`,
+- non-one-hot concept-class association matrix `M`,
+- class-class concept profile cosine similarity,
+- a minimal adapter + concept-similarity + linear-classifier model trained with:
+  `L = L_cls + lambda_cycl * L_CyCL + lambda_align * L_align`.
+
+```bash
+python ebtc_discriminative_whitelist_cycl.py \
+  --top-ks 5,10,20,30 \
+  --seeds 42,43,44 \
+  --epochs 80 \
+  --patience 15
+```
+
+Default output:
+
+```text
+ebtc_discriminative_whitelist_cycl_outputs/
+```
+
+Key files:
+
+- `concept_discriminative_scores.csv`
+- `top_concepts_k*_*.csv`
+- `whitelist_top*.csv`
+- `M_matrix_top*_normalized.csv`
+- `M_matrix_top*_heatmap.png`
+- `class_profile_similarity_top*.csv`
+- `class_profile_similarity_top*.png`
+- `training_seed_results.csv`
+- `training_results_summary.csv`
+- `model_architecture.png`
+- `experiment_report.md`
+
 ## Notes
 
 - Test split should remain frozen for final evaluation.
 - Use validation metrics for checkpoint selection.
 - Do not regenerate concept filtering while running a fixed-bank formal comparison.
-

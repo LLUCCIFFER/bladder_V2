@@ -13,6 +13,7 @@ backward compatibility. New project-level configuration is centralized in
 - `ebtc_cbm_cycl_v2.py`: V2 CLI for matrix verification, preparation, augmentation, pair debugging, smoke tests, training diagnostics, formal comparisons, and final analysis.
 - `ebtc_cbm_cycl_v2_lib.py`: V2 reusable components.
 - `ebtc_cycl_hierarchical_stage.py`: hierarchical classification experiments.
+- `ebtc_discriminative_whitelist_cycl.py`: hardest-negative concept whitelist, M matrix construction, class-profile CyCL, and minimal concept-activation classifier.
 
 ## Utility Scripts
 
@@ -33,4 +34,3 @@ The following are generated locally and intentionally excluded from git:
 
 If a result table is needed for a paper or review, summarize it in markdown
 rather than committing the entire output directory.
-

@@ -40,6 +40,7 @@ dataset/model artifacts.
 ├── ebtc_cbm_cycl_v2.py                    # CBM/CyCL V2 CLI
 ├── ebtc_cbm_cycl_v2_lib.py                # V2 model/data/pair/loss utilities
 ├── ebtc_cycl_hierarchical_stage.py        # hierarchical experiments
+├── ebtc_discriminative_whitelist_cycl.py  # hardest-negative whitelist + M-profile CyCL
 ├── export_biomedclip_image_embeddings.py  # embedding export utility
 ├── configs/                               # example environment/config files
 ├── docs/                                  # reproducibility and structure docs
@@ -111,6 +112,14 @@ python ebtc_cbm_cycl_v2.py smoke-test --model-type cbm_no_cycl_v2
 python ebtc_cbm_cycl_v2.py smoke-test --model-type cycl_v2
 ```
 
+Run discriminative whitelist + concept-profile CyCL:
+
+```bash
+python ebtc_discriminative_whitelist_cycl.py \
+  --top-ks 5,10,20,30 \
+  --seeds 42,43,44
+```
+
 ## Reproducibility
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for the expected data
@@ -119,4 +128,3 @@ layout, environment variables, and recommended command sequence.
 ## License
 
 This project is released under the MIT License. See [LICENSE](LICENSE).
-
