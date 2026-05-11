@@ -139,6 +139,21 @@ python ebtc_ensemble_checkpoints.py \
   --top-k 10
 ```
 
+The ensemble utility also supports multiple run directories. The current best
+validation-selected exploratory ensemble uses 9 checkpoints from three runs:
+
+```bash
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search2_h128_align015 \
+  --run-dir ebtc_discriminative_whitelist_cycl_search3_h128_align012 \
+  --run-dir ebtc_discriminative_whitelist_cycl_improved_fast_align_only_top10 \
+  --top-k 10 \
+  --output-dir ebtc_discriminative_whitelist_cycl_improvement_analysis/best_val_selected_ensemble_3dirs
+```
+
+This configuration uses 40 concepts, an adapter-CBM with concept-only
+classification, and probability averaging across checkpoints.
+
 ## Reproducibility
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for the expected data

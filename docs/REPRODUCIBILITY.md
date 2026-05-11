@@ -121,6 +121,24 @@ python ebtc_ensemble_checkpoints.py \
   --top-k 10
 ```
 
+Best validation-selected multi-run ensemble found so far:
+
+```bash
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search2_h128_align015 \
+  --run-dir ebtc_discriminative_whitelist_cycl_search3_h128_align012 \
+  --run-dir ebtc_discriminative_whitelist_cycl_improved_fast_align_only_top10 \
+  --top-k 10 \
+  --output-dir ebtc_discriminative_whitelist_cycl_improvement_analysis/best_val_selected_ensemble_3dirs
+```
+
+This averages probabilities from 9 checkpoints and produced:
+
+```text
+Val  accuracy/macro-F1/AUROC = 0.8604 / 0.8624 / 0.9648
+Test accuracy/macro-F1/AUROC = 0.5450 / 0.5665 / 0.7957
+```
+
 Default output:
 
 ```text

@@ -19,7 +19,13 @@ from ebtc_project_paths import OFFICIAL_EMBEDDINGS_DIR
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate ensemble predictions from saved whitelist-CBM checkpoints.")
-    parser.add_argument("--run-dir", type=Path, required=True, help="Directory produced by ebtc_discriminative_whitelist_cycl.py")
+    parser.add_argument(
+        "--run-dir",
+        type=Path,
+        action="append",
+        required=True,
+        help="Directory produced by ebtc_discriminative_whitelist_cycl.py. Can be supplied multiple times.",
+    )
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--embeddings-dir", type=Path, default=OFFICIAL_EMBEDDINGS_DIR)
     parser.add_argument("--output-dir", type=Path, default=None)
@@ -45,27 +51,42 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
-def load_models(run_dir: Path, top_k: int) -> tuple[list[AdapterConceptCBM], np.ndarray, list[Path]]:
-    whitelist_path = run_dir / f"whitelist_top{top_k}.npz"
-    payload = np.load(whitelist_path, allow_pickle=True)
-    concept_embeddings = payload["concept_embeddings"].astype(np.float32)
-    checkpoint_paths = sorted((run_dir / "training" / f"top{top_k}").glob("seed_*/best_checkpoint.pt"))
-    if not checkpoint_paths:
-        raise FileNotFoundError(f"No checkpoints found under {run_dir / 'training' / f'top{top_k}'}")
-
+def load_models(run_dirs: list[Path], top_k: int) -> tuple[list[AdapterConceptCBM], int, list[Path]]:
     models: list[AdapterConceptCBM] = []
-    for checkpoint_path in checkpoint_paths:
-        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        checkpoint_args = checkpoint.get("args", {})
-        model = AdapterConceptCBM(
-            concept_embeddings=concept_embeddings,
-            hidden_dim=int(checkpoint_args.get("hidden_dim", 256)),
-            dropout=float(checkpoint_args.get("dropout", 0.1)),
-        )
-        model.load_state_dict(checkpoint["model_state_dict"])
-        model.eval()
-        models.append(model)
-    return models, concept_embeddings, checkpoint_paths
+    checkpoint_paths: list[Path] = []
+    n_concepts: int | None = None
+
+    for run_dir in run_dirs:
+        whitelist_path = run_dir / f"whitelist_top{top_k}.npz"
+        payload = np.load(whitelist_path, allow_pickle=True)
+        concept_embeddings = payload["concept_embeddings"].astype(np.float32)
+        if n_concepts is None:
+            n_concepts = int(concept_embeddings.shape[0])
+        elif n_concepts != int(concept_embeddings.shape[0]):
+            raise ValueError(
+                f"Inconsistent concept count: expected {n_concepts}, got {concept_embeddings.shape[0]} in {whitelist_path}"
+            )
+
+        run_checkpoint_paths = sorted((run_dir / "training" / f"top{top_k}").glob("seed_*/best_checkpoint.pt"))
+        if not run_checkpoint_paths:
+            raise FileNotFoundError(f"No checkpoints found under {run_dir / 'training' / f'top{top_k}'}")
+
+        for checkpoint_path in run_checkpoint_paths:
+            checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+            checkpoint_args = checkpoint.get("args", {})
+            model = AdapterConceptCBM(
+                concept_embeddings=concept_embeddings,
+                hidden_dim=int(checkpoint_args.get("hidden_dim", 256)),
+                dropout=float(checkpoint_args.get("dropout", 0.1)),
+            )
+            model.load_state_dict(checkpoint["model_state_dict"])
+            model.eval()
+            models.append(model)
+            checkpoint_paths.append(checkpoint_path)
+
+    if n_concepts is None:
+        raise ValueError("No run directories were provided.")
+    return models, n_concepts, checkpoint_paths
 
 
 def evaluate_split(models: list[AdapterConceptCBM], split_embeddings: np.ndarray, labels: np.ndarray) -> dict[str, Any]:
@@ -100,11 +121,12 @@ def evaluate_split(models: list[AdapterConceptCBM], split_embeddings: np.ndarray
 
 def main() -> None:
     args = parse_args()
-    output_dir = args.output_dir or (args.run_dir / "ensemble")
+    output_dir = args.output_dir or (args.run_dir[0] / "ensemble")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     split_payloads = load_split_payloads(args.embeddings_dir)
-    models, concept_embeddings, checkpoint_paths = load_models(args.run_dir, args.top_k)
+    models, n_concepts, checkpoint_paths = load_models(args.run_dir, args.top_k)
+    run_dirs = [str(path) for path in args.run_dir]
 
     rows: list[dict[str, Any]] = []
     confusion_payload: dict[str, Any] = {}
@@ -113,10 +135,10 @@ def main() -> None:
         metrics = evaluate_split(models, payload.embeddings, payload.labels)
         row = {
             "split": split,
-            "run_dir": str(args.run_dir),
+            "run_dirs": "|".join(run_dirs),
             "top_k": args.top_k,
             "n_models": len(models),
-            "n_concepts": int(concept_embeddings.shape[0]),
+            "n_concepts": n_concepts,
             "accuracy": metrics["accuracy"],
             "macro_f1": metrics["macro_f1"],
             "macro_auroc": metrics["macro_auroc"],
@@ -137,11 +159,11 @@ def main() -> None:
     (output_dir / "ensemble_manifest.json").write_text(
         json.dumps(
             {
-                "run_dir": str(args.run_dir),
+                "run_dirs": run_dirs,
                 "top_k": args.top_k,
                 "n_models": len(models),
                 "checkpoint_paths": [str(path) for path in checkpoint_paths],
-                "n_concepts": int(concept_embeddings.shape[0]),
+                "n_concepts": n_concepts,
             },
             indent=2,
         ),

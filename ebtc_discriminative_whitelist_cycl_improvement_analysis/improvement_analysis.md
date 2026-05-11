@@ -198,3 +198,136 @@ python ebtc_ensemble_checkpoints.py \
 Important caveat:
 
 This should be reported as the best exploratory result from this search. For a final paper-level claim, the hyperparameters should be frozen before any further test-set evaluation.
+
+## Best Current Validation-Selected Ensemble
+
+After adding multi-run ensemble evaluation, the best validation-selected
+ensemble uses 9 checkpoints from three independent exploratory runs:
+
+```text
+top10/class whitelist
+40 concepts
+lambda_cycl=0
+lambda_align in {0.05, 0.12, 0.15}
+hidden_dim in {128, 256}
+9 total checkpoints
+```
+
+Reproduction command:
+
+```bash
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search2_h128_align015 \
+  --run-dir ebtc_discriminative_whitelist_cycl_search3_h128_align012 \
+  --run-dir ebtc_discriminative_whitelist_cycl_improved_fast_align_only_top10 \
+  --top-k 10 \
+  --output-dir ebtc_discriminative_whitelist_cycl_improvement_analysis/best_val_selected_ensemble_3dirs
+```
+
+Result:
+
+| Split | Accuracy | Macro-F1 | Macro-AUROC |
+|---|---:|---:|---:|
+| Val | 0.8604 | 0.8624 | 0.9648 |
+| Test | 0.5450 | 0.5665 | 0.7957 |
+
+Per-class test result:
+
+| Class | Precision | Recall | F1 |
+|---|---:|---:|---:|
+| HGC | 0.4935 | 0.5135 | 0.5033 |
+| LGC | 0.4286 | 0.4528 | 0.4404 |
+| NTL | 0.4400 | 0.4400 | 0.4400 |
+| NST | 0.9677 | 0.8108 | 0.8824 |
+
+Test confusion matrix:
+
+| True \\ Pred | HGC | LGC | NTL | NST |
+|---|---:|---:|---:|---:|
+| HGC | 38 | 29 | 6 | 1 |
+| LGC | 28 | 24 | 1 | 0 |
+| NTL | 11 | 3 | 11 | 0 |
+| NST | 0 | 0 | 7 | 30 |
+
+This is the strongest result that can be selected without directly optimizing
+on the test metric. It improves the original full-loss single-model Macro-F1 by
+0.1130 absolute points.
+
+## Test-Diagnostic Upper Bound From Ensemble Search
+
+A separate diagnostic search over ensemble subsets found a slightly higher test
+result:
+
+```text
+Test Accuracy    = 0.5503
+Test Macro-F1    = 0.5702
+Test Macro-AUROC = 0.7970
+```
+
+This used 14 checkpoints from:
+
+```text
+ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds
+ebtc_discriminative_whitelist_cycl_search2_h128_align015
+ebtc_discriminative_whitelist_cycl_search3_h128_align012
+ebtc_discriminative_whitelist_cycl_improved_fast_align_only_top10
+```
+
+Reproduction command:
+
+```bash
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds \
+  --run-dir ebtc_discriminative_whitelist_cycl_search2_h128_align015 \
+  --run-dir ebtc_discriminative_whitelist_cycl_search3_h128_align012 \
+  --run-dir ebtc_discriminative_whitelist_cycl_improved_fast_align_only_top10 \
+  --top-k 10 \
+  --output-dir ebtc_discriminative_whitelist_cycl_improvement_analysis/best_test_diagnostic_ensemble_4dirs
+```
+
+This should be treated as a diagnostic upper bound, not as a strict final
+paper-level model selection result, because the combination was identified by
+checking test performance.
+
+## Current Best Model Structure
+
+The best-performing structure is still a concept bottleneck model:
+
+```text
+image
+  -> frozen BioMedCLIP image encoder / cached 512-d image embedding
+  -> adapter MLP: Linear(512, hidden_dim) + GELU + Dropout + Linear(hidden_dim, 512)
+  -> residual adapted embedding: normalize(image_embedding + adapter(image_embedding))
+  -> concept scoring: cosine similarity to 40 whitelist concept text embeddings
+  -> 40-d concept activation vector
+  -> linear classifier: Linear(40, 4)
+  -> HGC / LGC / NTL / NST prediction
+```
+
+The final classifier has no hidden-image-feature bypass; it consumes only the
+concept activation vector. The best current training objective is:
+
+```text
+L = L_cls + lambda_align * L_align
+lambda_cycl = 0
+```
+
+`L_align` weakly aligns image concept activations to the empirical non-one-hot
+class concept profile matrix `M`. The explicit CyCL contrastive term is not used
+in the current best result because it was consistently less stable on this
+dataset and concept bank.
+
+## Why This Improved The Result
+
+The main changes that improved performance were:
+
+- Reducing the concept bank to 40 strongest hardest-negative concepts avoids adding noisy weak concepts.
+- Removing the strong CyCL contrastive term avoids forcing noisy class-profile similarities into the embedding space.
+- Keeping a weak M-profile alignment term preserves useful concept-level class prior information.
+- Reducing the adapter hidden size to 128 reduces overfitting in several seeds.
+- Probability ensembling reduces seed instability, especially for HGC/LGC/NTL.
+
+The remaining main error mode is still HGC/LGC confusion. This is consistent
+with the concept-bank diagnostics: HGC and LGC share high concept-profile
+similarity, so treating them as fully separable with a hard contrastive negative
+is not appropriate.

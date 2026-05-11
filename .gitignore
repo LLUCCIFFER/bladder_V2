@@ -59,4 +59,6 @@ results_bundle.zip
 # Local diagnostic generated files
 biomedclip_cpu_check.json
 ebtc_discriminative_whitelist_cycl_improvement_analysis/best_ensemble_*/
+ebtc_discriminative_whitelist_cycl_improvement_analysis/best_*_ensemble_*/
+ebtc_discriminative_whitelist_cycl_improvement_analysis/ensemble_*_search/
 ebtc_discriminative_whitelist_cycl_improvement_analysis/ensemble_confusion_matrices.json
