@@ -102,6 +102,25 @@ python ebtc_discriminative_whitelist_cycl.py \
   --num-threads 2
 ```
 
+Best exploratory ensemble setting:
+
+```bash
+python ebtc_discriminative_whitelist_cycl.py \
+  --top-ks 10 \
+  --seeds 42,43,44,45,46 \
+  --epochs 40 \
+  --patience 8 \
+  --lambda-cycl 0 \
+  --lambda-align 0.12 \
+  --hidden-dim 128 \
+  --num-threads 2 \
+  --output-dir ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds
+
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds \
+  --top-k 10
+```
+
 Default output:
 
 ```text

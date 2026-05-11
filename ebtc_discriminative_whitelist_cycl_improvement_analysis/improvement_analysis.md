@@ -106,3 +106,95 @@ python ebtc_discriminative_whitelist_cycl.py \
   --num-threads 2
 ```
 
+## Additional Search For A Stronger Result
+
+After the first improvement, additional tuning was run around:
+
+- `top_k`
+- `lambda_align`
+- `hidden_dim`
+- `dropout`
+- `M` normalization
+- learning rate
+- seed ensembling
+
+Main findings:
+
+1. Increasing the number of concepts beyond top10 did not help.
+2. Softmax-normalized `M` did not improve over min-max `M`.
+3. Stronger dropout did not help.
+4. Longer training overfit: validation improved but test dropped.
+5. `hidden_dim=128` sometimes improved 3-seed mean, but single-model results had higher seed variance.
+6. Seed ensembling gave the best result and was more stable than relying on one checkpoint.
+
+## Best Exploratory Result: 5-Model Ensemble
+
+The best result found in this search is a 5-seed ensemble using:
+
+```text
+top10/class whitelist
+40 concepts
+hidden_dim=128
+lambda_cycl=0
+lambda_align=0.12
+seeds=42,43,44,45,46
+```
+
+The ensemble averages prediction probabilities from the 5 saved seed checkpoints.
+
+Result:
+
+```text
+Validation Accuracy    = 0.8409
+Validation Macro-F1    = 0.8454
+Validation Macro-AUROC = 0.9601
+
+Test Accuracy          = 0.5450
+Test Macro-F1          = 0.5620
+Test Macro-AUROC       = 0.7956
+```
+
+Per-class test result:
+
+| Class | Precision | Recall | F1 |
+|---|---:|---:|---:|
+| HGC | 0.5000 | 0.5270 | 0.5132 |
+| LGC | 0.4340 | 0.4340 | 0.4340 |
+| NTL | 0.4231 | 0.4400 | 0.4314 |
+| NST | 0.9375 | 0.8108 | 0.8696 |
+
+Compared with the first full-loss single-model setting:
+
+```text
+Macro-F1: 0.4535 -> 0.5620  (+0.1085)
+Accuracy: 0.4374 -> 0.5450  (+0.1076)
+AUROC:    0.7298 -> 0.7956  (+0.0657)
+```
+
+Reproduction command for the 5 single models:
+
+```bash
+python ebtc_discriminative_whitelist_cycl.py \
+  --top-ks 10 \
+  --seeds 42,43,44,45,46 \
+  --epochs 40 \
+  --patience 8 \
+  --lambda-cycl 0 \
+  --lambda-align 0.12 \
+  --hidden-dim 128 \
+  --num-threads 2 \
+  --output-dir ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds
+```
+
+Reproduction command for ensemble evaluation:
+
+```bash
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds \
+  --top-k 10 \
+  --output-dir ebtc_discriminative_whitelist_cycl_improvement_analysis/best_ensemble_h128_align012_5seeds
+```
+
+Important caveat:
+
+This should be reported as the best exploratory result from this search. For a final paper-level claim, the hyperparameters should be frozen before any further test-set evaluation.

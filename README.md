@@ -131,6 +131,14 @@ python ebtc_discriminative_whitelist_cycl.py \
   --num-threads 2
 ```
 
+Evaluate a seed ensemble from saved checkpoints:
+
+```bash
+python ebtc_ensemble_checkpoints.py \
+  --run-dir ebtc_discriminative_whitelist_cycl_search4_h128_align012_5seeds \
+  --top-k 10
+```
+
 ## Reproducibility
 
 See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) for the expected data

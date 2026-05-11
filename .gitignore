@@ -24,6 +24,7 @@ env/
 *_outputs_*/
 *_outputs_backup*/
 *_improved*/
+*_search*/
 *_cache/
 *_exports/
 _tmp*/
@@ -57,3 +58,5 @@ results_bundle.zip
 
 # Local diagnostic generated files
 biomedclip_cpu_check.json
+ebtc_discriminative_whitelist_cycl_improvement_analysis/best_ensemble_*/
+ebtc_discriminative_whitelist_cycl_improvement_analysis/ensemble_confusion_matrices.json
