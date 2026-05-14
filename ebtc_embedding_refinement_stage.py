@@ -112,6 +112,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lambda-t2i", type=float, default=0.5)
     parser.add_argument("--refine-seed", type=int, default=42)
     parser.add_argument("--disable-balanced-refine-sampler", action="store_true")
+    parser.add_argument("--refine-target-mode", choices=["hard", "semantic"], default="hard")
+    parser.add_argument("--semantic-related-weight", type=float, default=0.35)
+    parser.add_argument("--semantic-other-weight", type=float, default=0.02)
+    parser.add_argument(
+        "--refine-selection-metric",
+        choices=["val_retrieval_macro_f1", "val_diag_minus_offdiag"],
+        default="val_retrieval_macro_f1",
+    )
 
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--near-duplicate-threshold", type=float, default=0.995)
@@ -165,6 +173,33 @@ def multipositive_nce(logits: torch.Tensor, positive_mask: torch.Tensor) -> torc
     mask_valid = positive_mask[valid]
     positive_logits = logits_valid.masked_fill(~mask_valid, -1e9)
     return -(torch.logsumexp(positive_logits, dim=1) - torch.logsumexp(logits_valid, dim=1)).mean()
+
+
+def soft_target_nce(logits: torch.Tensor, target_weights: torch.Tensor) -> torch.Tensor:
+    """Cross-entropy against non-one-hot positive weights over each row."""
+
+    target = target_weights / torch.clamp(target_weights.sum(dim=1, keepdim=True), min=EPS)
+    log_prob = F.log_softmax(logits, dim=1)
+    return -(target * log_prob).sum(dim=1).mean()
+
+
+def build_semantic_class_weights(related_weight: float, other_weight: float, device: torch.device) -> torch.Tensor:
+    """Class-level semantic weights used for soft image-text refinement targets.
+
+    HGC/LGC are treated as related cancer grades. NTL/NST are treated as related
+    non-cancer tissue/lesion classes. All other cross-group pairs retain a small
+    non-zero weight so they are not pushed apart as infinitely hard negatives.
+    """
+
+    weights = torch.full((len(CLASSES), len(CLASSES)), float(other_weight), dtype=torch.float32, device=device)
+    weights.fill_diagonal_(1.0)
+    related_pairs = [("HGC", "LGC"), ("NTL", "NST")]
+    for left, right in related_pairs:
+        i = CLASS_TO_INDEX[left]
+        j = CLASS_TO_INDEX[right]
+        weights[i, j] = float(related_weight)
+        weights[j, i] = float(related_weight)
+    return weights
 
 
 def make_refine_loader(split_payload: SplitPayload, batch_size: int, balanced: bool) -> DataLoader:
@@ -388,9 +423,14 @@ def train_refinement(
     )
     text_base = torch.tensor(bank.embeddings, dtype=torch.float32, device=device)
     concept_label_tensor = torch.tensor(concept_labels, dtype=torch.long, device=device)
+    semantic_class_weights = build_semantic_class_weights(
+        related_weight=args.semantic_related_weight,
+        other_weight=args.semantic_other_weight,
+        device=device,
+    )
 
     best_state: dict[str, torch.Tensor] | None = None
-    best_val_f1 = -math.inf
+    best_score = -math.inf
     patience = 0
     rows: list[dict[str, Any]] = []
 
@@ -404,12 +444,20 @@ def train_refinement(
             image_z = model.encode_images(features)
             text_z = model.encode_texts(text_base)
             logits_i2t = image_z @ text_z.T / args.refine_tau
-            pos_i2t = labels[:, None] == concept_label_tensor[None, :]
-            loss_i2t = multipositive_nce(logits_i2t, pos_i2t)
+            if args.refine_target_mode == "semantic":
+                target_i2t = semantic_class_weights[labels][:, concept_label_tensor]
+                loss_i2t = soft_target_nce(logits_i2t, target_i2t)
+            else:
+                pos_i2t = labels[:, None] == concept_label_tensor[None, :]
+                loss_i2t = multipositive_nce(logits_i2t, pos_i2t)
 
             logits_t2i = text_z @ image_z.T / args.refine_tau
-            pos_t2i = concept_label_tensor[:, None] == labels[None, :]
-            loss_t2i = multipositive_nce(logits_t2i, pos_t2i)
+            if args.refine_target_mode == "semantic":
+                target_t2i = semantic_class_weights[concept_label_tensor][:, labels]
+                loss_t2i = soft_target_nce(logits_t2i, target_t2i)
+            else:
+                pos_t2i = concept_label_tensor[:, None] == labels[None, :]
+                loss_t2i = multipositive_nce(logits_t2i, pos_t2i)
             loss = loss_i2t + args.lambda_t2i * loss_t2i
 
             optimizer.zero_grad(set_to_none=True)
@@ -450,8 +498,9 @@ def train_refinement(
             "val_off_diagonal_mean": summary["off_diagonal_mean"],
         }
         rows.append(row)
-        if float(val_vote["macro_f1"]) > best_val_f1:
-            best_val_f1 = float(val_vote["macro_f1"])
+        selected_score = float(row[args.refine_selection_metric])
+        if selected_score > best_score:
+            best_score = selected_score
             best_state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
             patience = 0
         else:
@@ -590,7 +639,10 @@ def save_refinement_report(
         f"- Starting bank: filtered_top300 concepts.",
         f"- Adapter hidden dim: `{args.adapter_hidden_dim}`.",
         f"- Refinement epochs requested: `{args.refine_epochs}`.",
-        f"- Refinement loss: image-to-text multi-positive InfoNCE + `{args.lambda_t2i}` * text-to-image InfoNCE.",
+        f"- Refinement target mode: `{args.refine_target_mode}`.",
+        f"- Refinement loss: image-to-text InfoNCE + `{args.lambda_t2i}` * text-to-image InfoNCE.",
+        f"- Semantic related/other weights: `{args.semantic_related_weight}` / `{args.semantic_other_weight}`.",
+        f"- Adapter checkpoint selection metric: `{args.refine_selection_metric}`.",
         f"- Whitelist rule after refinement: hardest-negative margin top `{args.top_k}` per class.",
         f"- CBM loss: `L_cls + {args.cbm_lambda_cycl} * L_CyCL + {args.cbm_lambda_align} * L_align`.",
         "",

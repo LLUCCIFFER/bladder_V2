@@ -194,6 +194,28 @@ python ebtc_embedding_refinement_ensemble.py \
   --stage refined_vectors_original_whitelist_top10
 ```
 
+Evaluate the 5-checkpoint ensemble after adding seeds 45 and 46:
+
+```bash
+python ebtc_embedding_refinement_ensemble.py \
+  --stage-output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --stage-output-dir ebtc_embedding_refinement_stage_conservative_moreseeds_outputs \
+  --stage refined_vectors_original_whitelist_top10 \
+  --output-dir ebtc_embedding_refinement_stage_conservative_outputs/cbm_training/refined_vectors_original_whitelist_top10/ensemble_5seed
+```
+
+Semantic soft-target refinement can be enabled with:
+
+```bash
+python ebtc_embedding_refinement_stage.py \
+  --refine-target-mode semantic \
+  --semantic-related-weight 0.35 \
+  --semantic-other-weight 0.02 \
+  --adapter-hidden-dim 128 \
+  --refine-lr 1e-4 \
+  --lambda-t2i 0.25
+```
+
 Key files:
 
 - `adapter_refinement/refinement_train_log.csv`

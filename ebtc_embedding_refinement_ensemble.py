@@ -22,7 +22,13 @@ DEFAULT_STAGE_DIR = OUTPUT_ROOT / "ebtc_embedding_refinement_stage_conservative_
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate an ensemble for an embedding-refinement CBM stage.")
-    parser.add_argument("--stage-output-dir", type=Path, default=DEFAULT_STAGE_DIR)
+    parser.add_argument(
+        "--stage-output-dir",
+        type=Path,
+        action="append",
+        default=None,
+        help="One or more output directories from ebtc_embedding_refinement_stage.py.",
+    )
     parser.add_argument(
         "--stage",
         choices=["original_control_top10", "refined_vectors_original_whitelist_top10", "refined_top10"],
@@ -71,26 +77,37 @@ def whitelist_path_for_stage(stage_output_dir: Path, stage: str, top_k: int) -> 
     return stage_output_dir / "refined_filtering" / f"whitelist_top{top_k}.npz"
 
 
-def load_models(stage_output_dir: Path, stage: str, top_k: int) -> tuple[list[AdapterConceptCBM], int, list[Path]]:
-    whitelist_path = whitelist_path_for_stage(stage_output_dir, stage, top_k)
-    payload = np.load(whitelist_path, allow_pickle=True)
-    concept_embeddings = payload["concept_embeddings"].astype(np.float32)
-    checkpoint_paths = sorted((stage_output_dir / "cbm_training" / stage / "training" / f"top{top_k}").glob("seed_*/best_checkpoint.pt"))
-    if not checkpoint_paths:
-        raise FileNotFoundError(f"No checkpoints found for {stage}")
+def load_models(stage_output_dirs: list[Path], stage: str, top_k: int) -> tuple[list[AdapterConceptCBM], int, list[Path]]:
     models: list[AdapterConceptCBM] = []
-    for checkpoint_path in checkpoint_paths:
-        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        checkpoint_args = checkpoint.get("args", {})
-        model = AdapterConceptCBM(
-            concept_embeddings=concept_embeddings,
-            hidden_dim=int(checkpoint_args.get("hidden_dim", 128)),
-            dropout=float(checkpoint_args.get("dropout", 0.1)),
-        )
-        model.load_state_dict(checkpoint["model_state_dict"])
-        model.eval()
-        models.append(model)
-    return models, int(concept_embeddings.shape[0]), checkpoint_paths
+    checkpoint_paths: list[Path] = []
+    n_concepts: int | None = None
+    for stage_output_dir in stage_output_dirs:
+        whitelist_path = whitelist_path_for_stage(stage_output_dir, stage, top_k)
+        payload = np.load(whitelist_path, allow_pickle=True)
+        concept_embeddings = payload["concept_embeddings"].astype(np.float32)
+        if n_concepts is None:
+            n_concepts = int(concept_embeddings.shape[0])
+        elif n_concepts != int(concept_embeddings.shape[0]):
+            raise ValueError(f"Inconsistent concept count in {whitelist_path}")
+
+        stage_checkpoint_paths = sorted((stage_output_dir / "cbm_training" / stage / "training" / f"top{top_k}").glob("seed_*/best_checkpoint.pt"))
+        if not stage_checkpoint_paths:
+            raise FileNotFoundError(f"No checkpoints found for {stage} under {stage_output_dir}")
+        for checkpoint_path in stage_checkpoint_paths:
+            checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+            checkpoint_args = checkpoint.get("args", {})
+            model = AdapterConceptCBM(
+                concept_embeddings=concept_embeddings,
+                hidden_dim=int(checkpoint_args.get("hidden_dim", 128)),
+                dropout=float(checkpoint_args.get("dropout", 0.1)),
+            )
+            model.load_state_dict(checkpoint["model_state_dict"])
+            model.eval()
+            models.append(model)
+            checkpoint_paths.append(checkpoint_path)
+    if n_concepts is None:
+        raise ValueError("No stage output dirs were provided.")
+    return models, n_concepts, checkpoint_paths
 
 
 def evaluate(models: list[AdapterConceptCBM], embeddings: np.ndarray, labels: np.ndarray) -> dict[str, Any]:
@@ -119,10 +136,11 @@ def evaluate(models: list[AdapterConceptCBM], embeddings: np.ndarray, labels: np
 
 def main() -> None:
     args = parse_args()
-    output_dir = args.output_dir or (args.stage_output_dir / "cbm_training" / args.stage / "ensemble")
+    stage_output_dirs = args.stage_output_dir or [DEFAULT_STAGE_DIR]
+    output_dir = args.output_dir or (stage_output_dirs[0] / "cbm_training" / args.stage / "ensemble")
     output_dir.mkdir(parents=True, exist_ok=True)
-    split_payloads = load_stage_split_payloads(args.stage_output_dir, args.stage, args.embeddings_dir)
-    models, n_concepts, checkpoint_paths = load_models(args.stage_output_dir, args.stage, args.top_k)
+    split_payloads = load_stage_split_payloads(stage_output_dirs[0], args.stage, args.embeddings_dir)
+    models, n_concepts, checkpoint_paths = load_models(stage_output_dirs, args.stage, args.top_k)
     rows: list[dict[str, Any]] = []
     confusion_payload: dict[str, Any] = {}
     for split in ["val", "test"]:
@@ -149,7 +167,7 @@ def main() -> None:
     (output_dir / "ensemble_manifest.json").write_text(
         json.dumps(
             {
-                "stage_output_dir": str(args.stage_output_dir),
+                "stage_output_dirs": [str(path) for path in stage_output_dirs],
                 "stage": args.stage,
                 "top_k": args.top_k,
                 "n_models": len(models),

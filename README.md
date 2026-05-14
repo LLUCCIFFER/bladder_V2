@@ -176,11 +176,33 @@ python ebtc_embedding_refinement_stage.py \
   --device cuda
 ```
 
+The refinement script also supports semantic soft InfoNCE targets:
+
+```bash
+python ebtc_embedding_refinement_stage.py \
+  --refine-target-mode semantic \
+  --semantic-related-weight 0.35 \
+  --semantic-other-weight 0.02 \
+  --adapter-hidden-dim 128 \
+  --refine-lr 1e-4 \
+  --lambda-t2i 0.25
+```
+
 Evaluate 3-checkpoint ensembles for a refinement stage:
 
 ```bash
 python ebtc_embedding_refinement_ensemble.py \
   --stage-output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --stage refined_vectors_original_whitelist_top10
+```
+
+Multiple refinement output directories can be supplied to evaluate a larger
+seed ensemble:
+
+```bash
+python ebtc_embedding_refinement_ensemble.py \
+  --stage-output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --stage-output-dir ebtc_embedding_refinement_stage_conservative_moreseeds_outputs \
   --stage refined_vectors_original_whitelist_top10
 ```
 
