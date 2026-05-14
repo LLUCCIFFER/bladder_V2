@@ -41,6 +41,8 @@ dataset/model artifacts.
 ├── ebtc_cbm_cycl_v2_lib.py                # V2 model/data/pair/loss utilities
 ├── ebtc_cycl_hierarchical_stage.py        # hierarchical experiments
 ├── ebtc_discriminative_whitelist_cycl.py  # hardest-negative whitelist + M-profile CyCL
+├── ebtc_embedding_refinement_stage.py     # image/text adapter refinement + refined whitelist/CBM
+├── ebtc_embedding_refinement_ensemble.py  # ensemble evaluation for refinement-stage checkpoints
 ├── export_biomedclip_image_embeddings.py  # embedding export utility
 ├── configs/                               # example environment/config files
 ├── docs/                                  # reproducibility and structure docs
@@ -153,6 +155,34 @@ python ebtc_ensemble_checkpoints.py \
 
 This configuration uses 40 concepts, an adapter-CBM with concept-only
 classification, and probability averaging across checkpoints.
+
+Run the next-stage image/text embedding refinement experiment:
+
+```bash
+python ebtc_embedding_refinement_stage.py \
+  --adapter-hidden-dim 128 \
+  --refine-lr 1e-4 \
+  --lambda-t2i 0.25 \
+  --refine-epochs 8 \
+  --refine-patience 3 \
+  --run-cbm \
+  --cbm-seeds 42,43,44 \
+  --cbm-epochs 40 \
+  --cbm-patience 8 \
+  --cbm-hidden-dim 128 \
+  --cbm-lambda-cycl 0 \
+  --cbm-lambda-align 0.05 \
+  --output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --device cuda
+```
+
+Evaluate 3-checkpoint ensembles for a refinement stage:
+
+```bash
+python ebtc_embedding_refinement_ensemble.py \
+  --stage-output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --stage refined_vectors_original_whitelist_top10
+```
 
 ## Reproducibility
 

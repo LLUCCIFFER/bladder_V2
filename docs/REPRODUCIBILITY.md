@@ -159,6 +159,53 @@ Key files:
 - `model_architecture.png`
 - `experiment_report.md`
 
+## 9. Run Image/Text Embedding Refinement Stage
+
+This stage keeps `filtered_top300` fixed, trains lightweight residual MLP
+adapters on cached BioMedCLIP image/text embeddings with multi-positive
+InfoNCE, recomputes refined image/text similarities, rebuilds top-k whitelists,
+and reruns the same concept-bottleneck classifier.
+
+Conservative setting used for the first comparison:
+
+```bash
+python ebtc_embedding_refinement_stage.py \
+  --adapter-hidden-dim 128 \
+  --refine-lr 1e-4 \
+  --lambda-t2i 0.25 \
+  --refine-epochs 8 \
+  --refine-patience 3 \
+  --run-cbm \
+  --cbm-seeds 42,43,44 \
+  --cbm-epochs 40 \
+  --cbm-patience 8 \
+  --cbm-hidden-dim 128 \
+  --cbm-lambda-cycl 0 \
+  --cbm-lambda-align 0.05 \
+  --output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --device cuda
+```
+
+Evaluate the 3-checkpoint ensemble for the best refinement-stage variant:
+
+```bash
+python ebtc_embedding_refinement_ensemble.py \
+  --stage-output-dir ebtc_embedding_refinement_stage_conservative_outputs \
+  --stage refined_vectors_original_whitelist_top10
+```
+
+Key files:
+
+- `adapter_refinement/refinement_train_log.csv`
+- `adapter_refinement/refined_image_embeddings_{train,val,test}.npy`
+- `adapter_refinement/refined_filtered_top300_text_embeddings.npz`
+- `matrix_verification/matrix_summary.csv`
+- `retrieval_majority_vote/majority_vote_results.csv`
+- `refined_filtering/whitelist_top10.csv`
+- `refined_vectors_original_whitelist/whitelist_top10.npz`
+- `cbm_training/combined_results_summary.csv`
+- `cbm_training/*/ensemble/ensemble_metrics.csv`
+
 ## Notes
 
 - Test split should remain frozen for final evaluation.
