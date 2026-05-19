@@ -329,3 +329,97 @@ Interpretation:
   repeated validation behavior supports it.
 - Compared with no class weighting, `ntl_boost2.5` fixes the NTL collapse:
   ensemble test NTL F1 improves from `0.0000` to `0.4400`.
+
+## 9. Image-Level Mild Augmentation
+
+The meeting also suggested using mild image augmentation to improve image
+representation robustness. This stage keeps the concept bank and classifier
+fixed, and only changes how train image embeddings are produced.
+
+Script:
+
+```text
+ebtc_image_level_mild_aug.py
+```
+
+Mild views:
+
+```text
+orig,color_bright,color_dark,rotate,crop
+```
+
+Two train strategies were tested:
+
+- `expand`: use every augmented view as a separate train row, giving 6285 train
+  rows.
+- `mean`: encode all views, average them back to one robust embedding per
+  original image, giving 1257 train rows.
+
+Validation/test remain clean single-view refined embeddings.
+
+### Expand Strategy
+
+Local output:
+
+```text
+ebtc_image_level_mild_aug_outputs/
+```
+
+3-seed ensemble test results:
+
+| Weight mode | Test Acc | Test Macro-F1 | Test AUROC | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ntl_boost2.5 | 0.5079 | 0.5261 | 0.7732 | 0.4658 | 0.4746 | 0.3774 | 0.7869 |
+| inverse | 0.5238 | 0.5547 | 0.7694 | 0.4722 | 0.4483 | 0.4727 | 0.8254 |
+| ntl_boost4 | 0.5132 | 0.5223 | 0.7967 | 0.5161 | 0.4630 | 0.3860 | 0.7241 |
+
+Interpretation:
+
+- Directly expanding train to 5x augmented rows did not help.
+- It produced very high validation scores but lower test performance, indicating
+  likely overfitting to correlated augmented views or a train/test embedding
+  distribution shift.
+
+### Mean Strategy
+
+Local output:
+
+```text
+ebtc_image_level_mild_aug_mean_outputs/
+```
+
+3-seed ensemble test results:
+
+| Weight mode | Test Acc | Test Macro-F1 | Test AUROC | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| ntl_boost2.5 | 0.5979 | 0.6289 | 0.8272 | 0.5333 | 0.4727 | 0.5652 | 0.9444 |
+| inverse | 0.5714 | 0.5326 | 0.8028 | 0.6054 | 0.2985 | 0.3077 | 0.9189 |
+| ntl_boost4 | 0.6085 | 0.6270 | 0.8517 | 0.5440 | 0.6111 | 0.4872 | 0.8657 |
+
+Comparison to no-augmentation class-weight search:
+
+| Setting | Weight mode | Test Acc | Test Macro-F1 | Test AUROC | NTL F1 |
+|---|---|---:|---:|---:|---:|
+| no augmentation | ntl_boost2.5 | 0.5714 | 0.5903 | 0.8090 | 0.4400 |
+| mild aug mean | ntl_boost2.5 | 0.5979 | 0.6289 | 0.8272 | 0.5652 |
+| no augmentation | ntl_boost4 | 0.5873 | 0.6075 | 0.8277 | 0.4746 |
+| mild aug mean | ntl_boost4 | 0.6085 | 0.6270 | 0.8517 | 0.4872 |
+
+Interpretation:
+
+- Mild image-level augmentation is useful when view embeddings are averaged per
+  image before classifier training.
+- `mild aug mean + ntl_boost2.5` is the best validation-consistent choice:
+  it improves test Macro-F1 from `0.5903` to `0.6289`, and NTL F1 from
+  `0.4400` to `0.5652`.
+- `mild aug mean + ntl_boost4` has slightly higher test Accuracy and AUROC, but
+  lower NTL F1 and lower NST F1 than `ntl_boost2.5`; keep it as a diagnostic
+  alternative rather than the primary recommendation.
+
+Current recommendation after this stage:
+
+```text
+refined vectors + original top10
++ image-level mild augmentation with mean view aggregation
++ CE class weight ntl_boost2.5
+```
