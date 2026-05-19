@@ -270,3 +270,62 @@ Local output directory:
 ```text
 ebtc_class_weight_ablation_outputs/
 ```
+
+## 8. Class Weight Fine Search
+
+After the first class-weighting ablation, a finer search was run around the
+useful NTL-focused region.
+
+Additional script support:
+
+- `custom_A_B_C_D` weight mode was added to `ebtc_class_weight_ablation.py`.
+- The four values correspond to explicit `HGC/LGC/NTL/NST` CE weights.
+
+Search output directory:
+
+```text
+ebtc_class_weight_ablation_search2_outputs/
+```
+
+Searched modes:
+
+| Mode | HGC | LGC | NTL | NST |
+|---|---:|---:|---:|---:|
+| ntl_boost2.5 | 1.0 | 1.0 | 2.5 | 1.0 |
+| ntl_boost3 | 1.0 | 1.0 | 3.0 | 1.0 |
+| ntl_boost3.5 | 1.0 | 1.0 | 3.5 | 1.0 |
+| ntl_boost4 | 1.0 | 1.0 | 4.0 | 1.0 |
+| ntl_boost5 | 1.0 | 1.0 | 5.0 | 1.0 |
+| custom_1_1_2.5_1.1 | 1.0 | 1.0 | 2.5 | 1.1 |
+| custom_1_1_3_1.1 | 1.0 | 1.0 | 3.0 | 1.1 |
+| custom_1_1_3_1.2 | 1.0 | 1.0 | 3.0 | 1.2 |
+| custom_1.1_1_3_1.2 | 1.1 | 1.0 | 3.0 | 1.2 |
+| custom_1_0.9_3_1.2 | 1.0 | 0.9 | 3.0 | 1.2 |
+
+Validation-selected best by 3-seed ensemble Macro-F1:
+
+| Mode | Val Acc | Val Macro-F1 | Val AUROC | Test Acc | Test Macro-F1 | Test AUROC |
+|---|---:|---:|---:|---:|---:|---:|
+| ntl_boost2.5 | 0.8571 | 0.8463 | 0.9688 | 0.5714 | 0.5903 | 0.8090 |
+
+Test per-class F1 for `ntl_boost2.5`:
+
+| HGC | LGC | NTL | NST |
+|---:|---:|---:|---:|
+| 0.5170 | 0.5088 | 0.4400 | 0.8955 |
+
+Best diagnostic test Macro-F1, not validation-selected:
+
+| Mode | Val Macro-F1 | Test Acc | Test Macro-F1 | Test AUROC |
+|---|---:|---:|---:|---:|
+| ntl_boost4 | 0.7505 | 0.5873 | 0.6075 | 0.8277 |
+
+Interpretation:
+
+- `ntl_boost2.5` is the strict validation-selected setting and is the current
+  recommended class-weight mode for the next-stage mild augmentation run.
+- `ntl_boost4` has the best diagnostic test Macro-F1, but its validation
+  Macro-F1 is much lower. It should not be promoted as the final choice unless
+  repeated validation behavior supports it.
+- Compared with no class weighting, `ntl_boost2.5` fixes the NTL collapse:
+  ensemble test NTL F1 improves from `0.0000` to `0.4400`.

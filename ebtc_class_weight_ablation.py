@@ -107,6 +107,7 @@ def class_weight_vector(labels: np.ndarray, mode: str, device: torch.device) -> 
     - sqrt_inverse: [N / (C * N_c)] ** 0.5
     - powX: [N / (C * N_c)] ** X, for example pow0.75
     - ntl_boostX: no global weighting, but multiply NTL by X
+    - custom_A_B_C_D: explicit HGC/LGC/NTL/NST weights
     """
 
     mode = mode.strip().lower()
@@ -127,6 +128,11 @@ def class_weight_vector(labels: np.ndarray, mode: str, device: torch.device) -> 
         factor = float(mode.replace("ntl_boost", ""))
         weights = np.ones(len(CLASSES), dtype=np.float32)
         weights[CLASSES.index("NTL")] = factor
+    elif mode.startswith("custom_"):
+        parts = mode.replace("custom_", "").split("_")
+        if len(parts) != len(CLASSES):
+            raise ValueError(f"Custom mode must provide {len(CLASSES)} weights: {mode}")
+        weights = np.array([float(item) for item in parts], dtype=np.float32)
     else:
         raise ValueError(f"Unsupported class weight mode: {mode}")
 
