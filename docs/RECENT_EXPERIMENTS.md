@@ -423,3 +423,36 @@ refined vectors + original top10
 + image-level mild augmentation with mean view aggregation
 + CE class weight ntl_boost2.5
 ```
+
+### Augmentation-Only View With None Baseline
+
+A follow-up table added the basic no-class-weight (`none`) baseline so the
+augmentation effect can be read without focusing only on class weighting.
+
+Local output:
+
+```text
+ebtc_image_level_mild_aug_analysis_outputs/augmentation_ablation_with_none.csv
+```
+
+| Weight | Augmentation | Test Acc | Test Macro-F1 | Test AUROC | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| none | no_aug | 0.5767 | 0.4987 | 0.8084 | 0.5731 | 0.4630 | 0.0000 | 0.9589 |
+| none | aug_expand | 0.4868 | 0.4931 | 0.7558 | 0.4027 | 0.4500 | 0.2500 | 0.8696 |
+| none | aug_mean | 0.5556 | 0.5032 | 0.7874 | 0.5062 | 0.4696 | 0.0769 | 0.9600 |
+| inverse | no_aug | 0.6032 | 0.5786 | 0.8158 | 0.6036 | 0.4792 | 0.3000 | 0.9315 |
+| inverse | aug_expand | 0.5238 | 0.5547 | 0.7694 | 0.4722 | 0.4483 | 0.4727 | 0.8254 |
+| inverse | aug_mean | 0.5714 | 0.5326 | 0.8028 | 0.6054 | 0.2985 | 0.3077 | 0.9189 |
+| ntl_boost2.5 | aug_expand | 0.5079 | 0.5261 | 0.7732 | 0.4658 | 0.4746 | 0.3774 | 0.7869 |
+| ntl_boost2.5 | aug_mean | 0.5979 | 0.6289 | 0.8272 | 0.5333 | 0.4727 | 0.5652 | 0.9444 |
+| ntl_boost4 | aug_expand | 0.5132 | 0.5223 | 0.7967 | 0.5161 | 0.4630 | 0.3860 | 0.7241 |
+| ntl_boost4 | aug_mean | 0.6085 | 0.6270 | 0.8517 | 0.5440 | 0.6111 | 0.4872 | 0.8657 |
+
+Additional interpretation:
+
+- Augmentation alone is not enough. With `none`, `aug_mean` gives only a tiny
+  Macro-F1 increase over no augmentation and NTL F1 remains very low.
+- `aug_expand` is not recommended; it is consistently weak despite high
+  validation behavior in some settings.
+- The useful recipe is not "augmentation only"; it is `aug_mean` plus an
+  appropriate NTL-aware class weight.
