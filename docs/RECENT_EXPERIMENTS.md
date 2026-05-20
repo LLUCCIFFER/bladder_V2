@@ -456,3 +456,52 @@ Additional interpretation:
   validation behavior in some settings.
 - The useful recipe is not "augmentation only"; it is `aug_mean` plus an
   appropriate NTL-aware class weight.
+
+## 11. Cosine-Only Top-10 Concept Assignment
+
+This stage implements the requested non-training cosine-similarity
+classification checks. It uses the concept activation vector directly and does
+not train a CBM/CyCL classifier.
+
+Local output:
+
+```text
+ebtc_cosine_topk_assignment_outputs/
+```
+
+Two rules were evaluated:
+
+- `majority_vote`: take the global top 10 concepts and predict the class that
+  appears most often among those concepts.
+- `class_average`: take the global top 10 concepts, average cosine similarity
+  within each concept class, and predict the class with the highest average.
+
+Main val/test results:
+
+| Stage | Split | Rule | Acc | Macro-F1 | Macro-AUROC |
+|---|---|---|---:|---:|---:|
+| refined_vectors_original_top10 | val | majority_vote | 0.5617 | 0.4756 | 0.8080 |
+| refined_vectors_original_top10 | val | class_average | 0.5325 | 0.4364 | 0.7649 |
+| refined_vectors_original_top10 | test | majority_vote | 0.5291 | 0.4334 | 0.7221 |
+| refined_vectors_original_top10 | test | class_average | 0.4974 | 0.3870 | 0.7103 |
+| original_vectors_original_top10 | test | majority_vote | 0.5503 | 0.4258 | 0.7262 |
+| original_vectors_original_top10 | test | class_average | 0.4656 | 0.3936 | 0.6602 |
+| refined_vectors_refined_top10 | test | majority_vote | 0.5397 | 0.4444 | 0.7280 |
+| refined_vectors_refined_top10 | test | class_average | 0.5132 | 0.3654 | 0.6448 |
+
+For the current main representation, `refined_vectors_original_top10`,
+majority vote is better than class-average on test (`0.4334` vs `0.3870`
+Macro-F1), but both are clearly weaker than the trained CBM results.
+
+Current-main test per-class F1:
+
+| Rule | HGC | LGC | NTL | NST |
+|---|---:|---:|---:|---:|
+| majority_vote | 0.6105 | 0.0000 | 0.3137 | 0.8095 |
+| class_average | 0.5744 | 0.0000 | 0.1304 | 0.8434 |
+
+The failure mode is LGC. For true LGC test images, the global top 10 concepts
+contain on average `7.23` HGC concepts and only `0.92` LGC concepts, so direct
+top-k rules almost never predict LGC. This supports the need for a learned
+CBM classifier: the concept vector contains useful signal, but the raw top-k
+class labels are too noisy and too affected by shared HGC/LGC structure.
