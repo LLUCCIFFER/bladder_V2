@@ -593,3 +593,49 @@ Detailed repair proposal:
 ```text
 docs/CONCEPT_VECTOR_REPAIR_SOLUTION.md
 ```
+
+## 14. Confusion-Aware Bank Repair Result
+
+The proposed bank-level repair was implemented in:
+
+```text
+ebtc_confusion_aware_bank_repair.py
+```
+
+The script keeps the same 40-d format but replaces concepts from the
+`filtered_top300` candidate pool using train-only class-separation statistics.
+Validation majority-vote Macro-F1 selected the `z_margin` strategy:
+
+```text
+z_margin = (mu_own - mean(mu_other_classes)) /
+           (std_own + mean(std_other_classes))
+```
+
+Main frozen-test results:
+
+| Vector source | Classifier | Acc | Macro-F1 | AUROC | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| mild-aug mean refined vectors | regular CBM, ntl_boost2.5 | 0.5979 | 0.6289 | 0.8272 | 0.5333 | 0.4727 | 0.5652 | 0.9444 |
+| raw_original_top10 | top10 majority_vote | 0.5291 | 0.4334 | 0.7221 | 0.6105 | 0.0000 | 0.3137 | 0.8095 |
+| repaired z_margin bank | top10 majority_vote | 0.5661 | 0.5588 | 0.7931 | 0.5135 | 0.5234 | 0.2917 | 0.9067 |
+| repaired z_margin bank | top10 class_average | 0.4921 | 0.4035 | 0.7376 | 0.5596 | 0.0882 | 0.1053 | 0.8608 |
+
+Key readout:
+
+- top10 majority Macro-F1 improves from `0.4334` to `0.5588`.
+- LGC F1 improves from `0.0000` to `0.5234`.
+- true-LGC top10 LGC concept count improves from `0.92` to `5.15`.
+- NST remains strong (`0.9067` F1).
+- NTL remains weak and should be handled with a separate NTL-focused repair.
+
+Local outputs:
+
+```text
+ebtc_confusion_aware_bank_repair_outputs/
+```
+
+Detailed result note:
+
+```text
+docs/CONFUSION_AWARE_BANK_REPAIR_RESULT.md
+```
