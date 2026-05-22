@@ -689,3 +689,49 @@ Detailed result note:
 ```text
 docs/CONCEPT_VECTOR_FUSION_RESULT.md
 ```
+
+## 16. Repaired-Bank Prediction and Residual Calibration Diagnostic
+
+The next follow-up tested whether the repaired `z_margin` vector can be
+improved with either hard `-1` MLP prediction or conservative residual
+calibration.
+
+Script:
+
+```text
+ebtc_repaired_vector_prediction_calibration.py
+```
+
+Tested methods:
+
+- hard `-1` MLP prediction from 512-d image embedding to repaired-bank 40-d
+  concept vector;
+- residual calibration with
+  `corrected = raw_vector + scale * tanh(MLP(raw_vector))`;
+- fixed raw+repaired fusion at the previously selected `w=0.85`.
+
+Frozen-test summary:
+
+| Vector source | Classifier | Acc | Macro-F1 | AUROC | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| direct repaired z_margin cosine | top10 majority_vote | 0.5661 | 0.5588 | 0.7931 | 0.5135 | 0.5234 | 0.2917 | 0.9067 |
+| direct raw + repaired fusion | fixed w=0.85 fusion majority_vote | 0.5767 | 0.5648 | 0.8144 | 0.5333 | 0.5333 | 0.2979 | 0.8947 |
+| hard `-1` MLP, positive weight 1, ensemble | top10 majority_vote | 0.4762 | 0.4712 | 0.6419 | 0.3256 | 0.4895 | 0.1579 | 0.9118 |
+| hard `-1` MLP, positive weight 3, ensemble | top10 majority_vote | 0.4921 | 0.4924 | 0.6618 | 0.3759 | 0.4818 | 0.2000 | 0.9118 |
+| residual scale 0.01, ensemble | top10 majority_vote | 0.5608 | 0.5350 | 0.7620 | 0.4035 | 0.5890 | 0.2500 | 0.8974 |
+| residual scale 0.01, fusion | fixed w=0.85 fusion majority_vote | 0.5767 | 0.5539 | 0.7878 | 0.4706 | 0.5942 | 0.2791 | 0.8718 |
+
+Readout:
+
+- hard `-1` prediction again shows a large validation-test gap and should not
+  be used as a supplemental improvement;
+- residual scale 0.01 improves LGC F1 but hurts HGC/NTL, and the 3-seed
+  ensemble remains below direct fusion;
+- a single residual seed slightly exceeded direct fusion on test Macro-F1, but
+  the effect is too small and not robust enough to report as a positive result.
+
+Detailed result note:
+
+```text
+docs/REPAIRED_VECTOR_PREDICTION_CALIBRATION_RESULT.md
+```
