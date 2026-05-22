@@ -639,3 +639,53 @@ Detailed result note:
 ```text
 docs/CONFUSION_AWARE_BANK_REPAIR_RESULT.md
 ```
+
+## 15. Raw + Repaired Concept-Vector Fusion
+
+The repaired `z_margin` bank fixed LGC collapse but weakened HGC and did not
+solve NTL. A follow-up fusion experiment tested whether the raw
+`original_top10` bank and repaired `z_margin` bank provide complementary
+top10 evidence.
+
+Script:
+
+```text
+ebtc_concept_vector_fusion.py
+```
+
+Fusion rule:
+
+```text
+c_fused(x) = (1 - w) * c_raw(x) + w * c_repaired(x)
+```
+
+Validation selected:
+
+```text
+count_fusion_0.85
+```
+
+Frozen-test results:
+
+| Vector source | Classifier | Acc | Macro-F1 | AUROC | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| mild-aug mean refined vectors | regular CBM, ntl_boost2.5 | 0.5979 | 0.6289 | 0.8272 | 0.5333 | 0.4727 | 0.5652 | 0.9444 |
+| raw_original_top10 | top10 majority_vote | 0.5291 | 0.4334 | 0.7221 | 0.6105 | 0.0000 | 0.3137 | 0.8095 |
+| repaired z_margin bank | top10 majority_vote | 0.5661 | 0.5588 | 0.7931 | 0.5135 | 0.5234 | 0.2917 | 0.9067 |
+| raw + repaired count fusion | top10 majority_vote, w=0.85 | 0.5767 | 0.5648 | 0.8144 | 0.5333 | 0.5333 | 0.2979 | 0.8947 |
+
+Key readout:
+
+- Fusion gives a modest additional gain over repaired z_margin:
+  `0.5588 -> 0.5648` test Macro-F1.
+- LGC stays repaired and HGC recovers slightly.
+- NTL remains the limiting class, with only `7/25` true-NTL test images
+  predicted as NTL under the selected fusion.
+- Class-average remains weak; the useful interpretable rule is still
+  top10 majority-style evidence.
+
+Detailed result note:
+
+```text
+docs/CONCEPT_VECTOR_FUSION_RESULT.md
+```
