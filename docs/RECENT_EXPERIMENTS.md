@@ -505,3 +505,56 @@ contain on average `7.23` HGC concepts and only `0.92` LGC concepts, so direct
 top-k rules almost never predict LGC. This supports the need for a learned
 CBM classifier: the concept vector contains useful signal, but the raw top-k
 class labels are too noisy and too affected by shared HGC/LGC structure.
+
+## 12. MLP Clean Concept-Vector Prediction
+
+The latest follow-up tested whether a small predictor can clean the noisy
+40-d concept activation vector before top10 rule-based classification.
+
+Script:
+
+```text
+ebtc_concept_vector_prediction.py
+```
+
+Target construction:
+
+- true-class concept positions keep their image-concept cosine values;
+- all other class concept positions are set to `-1`;
+- MLP maps refined image embeddings directly to the 40-d target vector.
+
+Two settings were run:
+
+```text
+positive_weight = 1.0
+positive_weight = 3.0
+```
+
+Main test results:
+
+| Source | Rule | Test Acc | Test Macro-F1 | Test AUROC |
+|---|---|---:|---:|---:|
+| raw cosine activation | majority_vote | 0.5291 | 0.4334 | 0.7221 |
+| raw cosine activation | class_average | 0.4974 | 0.3870 | 0.7103 |
+| predicted ensemble, pos_w=1 | majority_vote | 0.4233 | 0.4115 | 0.6088 |
+| predicted ensemble, pos_w=1 | class_average | 0.4233 | 0.4112 | 0.6794 |
+| predicted ensemble, pos_w=3 | majority_vote | 0.4286 | 0.4151 | 0.6131 |
+| predicted ensemble, pos_w=3 | class_average | 0.4286 | 0.4151 | 0.6981 |
+| predicted seed44, pos_w=3 | majority_vote | 0.4444 | 0.4547 | 0.6294 |
+
+Interpretation:
+
+- The MLP learns the train/validation target strongly, with validation
+  Macro-F1 around `0.88-0.91`, but test performance does not transfer.
+- The best single seed is slightly above raw top10 Macro-F1, but the effect is
+  unstable and the 3-seed ensemble is worse than the raw cosine activation.
+- The predicted vector suppresses false-class dimensions, but also pulls
+  true-class dimensions far below their intended cosine range.
+- This confirms that the raw vector is noisy, but direct hard-mask vector
+  prediction is not yet a reliable replacement.
+
+Detailed result note:
+
+```text
+docs/CONCEPT_VECTOR_PREDICTION_RESULT.md
+```
