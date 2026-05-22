@@ -560,3 +560,36 @@ Detailed result note:
 ```text
 docs/CONCEPT_VECTOR_PREDICTION_RESULT.md
 ```
+
+## 13. Concept Vector Repair Direction
+
+Additional diagnostics show that the fixed `original_top10` bank is not only
+noisy at the global top10 level. Even all-block class scoring over each class's
+10 concepts still never predicts LGC on the test split.
+
+Test diagnostic:
+
+| Rule | Acc | Macro-F1 | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---:|---:|---:|---:|---:|---:|
+| block_top5_mean | 0.5503 | 0.4501 | 0.6289 | 0.0000 | 0.3478 | 0.8235 |
+| block_top3_mean | 0.5450 | 0.4464 | 0.6218 | 0.0000 | 0.3404 | 0.8235 |
+| block_mean_all10 | 0.5397 | 0.4322 | 0.6349 | 0.0000 | 0.2800 | 0.8140 |
+
+Simple per-concept calibration and bounded residual repair were also checked.
+They can change the error pattern, but they do not beat raw top10 majority in a
+stable way under the fixed bank.
+
+Conclusion:
+
+- Hard-mask MLP prediction is not the right primary repair.
+- Fixed-bank post-processing is not enough.
+- The next priority should be confusion-aware bank repair: keep the same
+  4 classes x 10 concepts format, but replace concepts using train-only
+  HGC-vs-LGC and NTL-vs-HGC/LGC margin criteria before applying conservative
+  vector calibration.
+
+Detailed repair proposal:
+
+```text
+docs/CONCEPT_VECTOR_REPAIR_SOLUTION.md
+```
