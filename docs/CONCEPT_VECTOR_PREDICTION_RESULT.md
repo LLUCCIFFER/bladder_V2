@@ -16,8 +16,10 @@ Default input:
 
 - image vectors: refined BioMedCLIP image embeddings
 - concept bank: original top10 whitelist, 40 concepts total
-- target vector: true-class concept positions keep their image-concept cosine
-  values; all other class concept positions are set to `-1`
+- fixed concept order: HGC positions `0-9`, LGC positions `10-19`, NTL
+  positions `20-29`, NST positions `30-39`
+- target vector: true-class concept block keeps its image-concept cosine
+  values; all other class blocks are set to `-1`
 - predictor: MLP, 512 -> 256 -> 256 -> 40
 - seeds: 42, 43, 44
 - evaluation: same top10 `majority_vote` and `class_average` rules used by
@@ -30,6 +32,23 @@ Two loss-weight settings were run:
   counter the 30 false-class positions
 
 ## Main Test Results
+
+The strict MSE/no-tanh run is stored in:
+
+```text
+ebtc_concept_vector_prediction_strict_outputs/
+```
+
+Final comparison requested for reporting:
+
+| Vector source | Classifier | Acc | Macro-F1 | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| mild-aug mean refined vectors | regular CBM, ntl_boost2.5, 3-seed ensemble | 0.5979 | 0.6289 | 0.5333 | 0.4727 | 0.5652 | 0.9444 |
+| raw cosine activation | top10 majority_vote | 0.5291 | 0.4334 | 0.6105 | 0.0000 | 0.3137 | 0.8095 |
+| raw cosine activation | top10 class_average | 0.4974 | 0.3870 | 0.5744 | 0.0000 | 0.1304 | 0.8434 |
+| predicted clean vector | top10 majority_vote, 3-seed mean | 0.4233 | 0.4115 | 0.2308 | 0.4384 | 0.0625 | 0.9143 |
+| predicted clean vector | top10 class_average, 3-seed mean | 0.4233 | 0.4112 | 0.2326 | 0.4354 | 0.0625 | 0.9143 |
+| predicted clean vector | top10 majority_vote, best seed44 diagnostic | 0.4233 | 0.4431 | 0.2034 | 0.4267 | 0.2439 | 0.8986 |
 
 | Source | Rule | Test Acc | Test Macro-F1 | Test AUROC |
 |---|---|---:|---:|---:|
@@ -59,6 +78,15 @@ drop-in replacement for the raw concept activation vector.
 
 ## Per-Class Pattern
 
+For the strict MSE/no-tanh run, the predicted-vector 3-seed mean changes the
+failure mode:
+
+- raw top10 majority never predicts LGC on test, so LGC F1 is `0.0000`;
+- predicted-vector top10 majority recovers LGC F1 to `0.4384`;
+- HGC F1 drops sharply from `0.6105` to `0.2308`;
+- NTL F1 drops from `0.3137` to `0.0625`;
+- NST remains high (`0.9143`).
+
 For `positive_weight=3.0`, the best single seed is seed 44:
 
 | Rule | HGC F1 | LGC F1 | NTL F1 | NST F1 |
@@ -69,6 +97,56 @@ For `positive_weight=3.0`, the best single seed is seed 44:
 The predicted vector partially fixes the raw-vector LGC collapse, but it loses
 too much HGC and NTL performance. The ensemble makes this worse rather than
 stabilizing it.
+
+## Top10 Concept Class Counts
+
+Mean concept-class counts among the global top10 concepts on the test split:
+
+| Vector | True class | HGC concepts | LGC concepts | NTL concepts | NST concepts |
+|---|---|---:|---:|---:|---:|
+| raw cosine | HGC | 5.85 | 1.68 | 2.07 | 0.41 |
+| raw cosine | LGC | 7.23 | 0.92 | 1.08 | 0.77 |
+| raw cosine | NTL | 3.88 | 0.92 | 3.68 | 1.52 |
+| raw cosine | NST | 0.08 | 0.08 | 0.76 | 9.08 |
+| predicted 3-seed mean | HGC | 2.08 | 7.54 | 0.24 | 0.14 |
+| predicted 3-seed mean | LGC | 3.77 | 6.08 | 0.15 | 0.00 |
+| predicted 3-seed mean | NTL | 7.84 | 1.76 | 0.40 | 0.00 |
+| predicted 3-seed mean | NST | 0.27 | 0.27 | 0.81 | 8.65 |
+
+Readout:
+
+- LGC is no longer dominated by HGC concepts; LGC concepts rise from `0.92`
+  to `6.08` in true-LGC top10 lists.
+- The gain is not class-specific enough: true-HGC images now contain `7.54`
+  LGC concepts on average, which causes HGC to collapse into LGC.
+- NTL becomes less stable. True-NTL top10 lists shift from `3.68` NTL concepts
+  to only `0.40` NTL concepts and become HGC-dominated.
+- NST remains clean, with `8.65` NST concepts on average after prediction.
+
+## Confusion Pattern
+
+Top10 majority vote confusion matrices on the test split:
+
+Raw cosine activation:
+
+| true\pred | HGC | LGC | NTL | NST |
+|---|---:|---:|---:|---:|
+| HGC | 58 | 0 | 11 | 5 |
+| LGC | 45 | 0 | 4 | 4 |
+| NTL | 13 | 0 | 8 | 4 |
+| NST | 0 | 0 | 3 | 34 |
+
+Predicted clean vector, 3-seed mean:
+
+| true\pred | HGC | LGC | NTL | NST |
+|---|---:|---:|---:|---:|
+| HGC | 15 | 56 | 2 | 1 |
+| LGC | 20 | 32 | 1 | 0 |
+| NTL | 20 | 4 | 1 | 0 |
+| NST | 1 | 1 | 3 | 32 |
+
+The vector prediction network corrects the specific "never predict LGC"
+problem, but it overcorrects toward LGC for HGC and toward HGC for NTL.
 
 ## Vector Quality
 
@@ -102,6 +180,7 @@ output vector is cleaner in an MSE sense but worse for top10 concept assignment.
 ```text
 ebtc_concept_vector_prediction_outputs/
 ebtc_concept_vector_prediction_posw3_outputs/
+ebtc_concept_vector_prediction_strict_outputs/
 ```
 
 Key files:

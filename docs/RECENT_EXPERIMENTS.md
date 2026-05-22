@@ -519,8 +519,10 @@ ebtc_concept_vector_prediction.py
 
 Target construction:
 
-- true-class concept positions keep their image-concept cosine values;
-- all other class concept positions are set to `-1`;
+- fixed concept order is HGC positions `0-9`, LGC positions `10-19`, NTL
+  positions `20-29`, and NST positions `30-39`;
+- true-class concept block keeps its image-concept cosine values;
+- all other class blocks are set to `-1`;
 - MLP maps refined image embeddings directly to the 40-d target vector.
 
 Two settings were run:
@@ -532,22 +534,22 @@ positive_weight = 3.0
 
 Main test results:
 
-| Source | Rule | Test Acc | Test Macro-F1 | Test AUROC |
-|---|---|---:|---:|---:|
-| raw cosine activation | majority_vote | 0.5291 | 0.4334 | 0.7221 |
-| raw cosine activation | class_average | 0.4974 | 0.3870 | 0.7103 |
-| predicted ensemble, pos_w=1 | majority_vote | 0.4233 | 0.4115 | 0.6088 |
-| predicted ensemble, pos_w=1 | class_average | 0.4233 | 0.4112 | 0.6794 |
-| predicted ensemble, pos_w=3 | majority_vote | 0.4286 | 0.4151 | 0.6131 |
-| predicted ensemble, pos_w=3 | class_average | 0.4286 | 0.4151 | 0.6981 |
-| predicted seed44, pos_w=3 | majority_vote | 0.4444 | 0.4547 | 0.6294 |
+| Vector source | Classifier | Test Acc | Test Macro-F1 | HGC F1 | LGC F1 | NTL F1 | NST F1 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| mild-aug mean refined vectors | regular CBM, ntl_boost2.5, 3-seed ensemble | 0.5979 | 0.6289 | 0.5333 | 0.4727 | 0.5652 | 0.9444 |
+| raw cosine activation | top10 majority_vote | 0.5291 | 0.4334 | 0.6105 | 0.0000 | 0.3137 | 0.8095 |
+| raw cosine activation | top10 class_average | 0.4974 | 0.3870 | 0.5744 | 0.0000 | 0.1304 | 0.8434 |
+| predicted clean vector | top10 majority_vote, 3-seed mean | 0.4233 | 0.4115 | 0.2308 | 0.4384 | 0.0625 | 0.9143 |
+| predicted clean vector | top10 class_average, 3-seed mean | 0.4233 | 0.4112 | 0.2326 | 0.4354 | 0.0625 | 0.9143 |
 
 Interpretation:
 
 - The MLP learns the train/validation target strongly, with validation
   Macro-F1 around `0.88-0.91`, but test performance does not transfer.
-- The best single seed is slightly above raw top10 Macro-F1, but the effect is
-  unstable and the 3-seed ensemble is worse than the raw cosine activation.
+- The predicted vector fixes the specific LGC collapse in the raw top10 rule:
+  LGC F1 rises from `0.0000` to `0.4384`.
+- The correction is not class-specific enough. HGC F1 drops from `0.6105` to
+  `0.2308`, and NTL F1 drops from `0.3137` to `0.0625`.
 - The predicted vector suppresses false-class dimensions, but also pulls
   true-class dimensions far below their intended cosine range.
 - This confirms that the raw vector is noisy, but direct hard-mask vector

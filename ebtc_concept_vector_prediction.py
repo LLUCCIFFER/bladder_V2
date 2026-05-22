@@ -43,6 +43,7 @@ from ebtc_project_paths import OFFICIAL_EMBEDDINGS_DIR, OUTPUT_ROOT
 
 DEFAULT_REFINED_STAGE_DIR = OUTPUT_ROOT / "ebtc_embedding_refinement_stage_conservative_outputs"
 DEFAULT_OUTPUT_DIR = OUTPUT_ROOT / "ebtc_concept_vector_prediction_outputs"
+CONCEPTS_PER_CLASS = 10
 
 
 @dataclass
@@ -132,14 +133,29 @@ def clean_targets(
     negative_value: float,
     positive_weight: float,
 ) -> tuple[np.ndarray, np.ndarray]:
+    """Build class-block cleaned targets for the fixed original_top10 bank.
+
+    The current main bank is ordered as HGC 0-9, LGC 10-19, NTL 20-29,
+    and NST 30-39. Keep this explicit so the experiment matches the meeting
+    definition rather than silently relying on arbitrary concept metadata.
+    """
+
+    expected_labels = np.repeat(np.arange(len(CLASSES), dtype=np.int64), CONCEPTS_PER_CLASS)
+    if concept_labels.shape[0] != expected_labels.shape[0] or not np.array_equal(concept_labels, expected_labels):
+        raise RuntimeError(
+            "The concept-vector prediction diagnostic expects the fixed original_top10 bank ordered as "
+            "HGC positions 0-9, LGC 10-19, NTL 20-29, NST 30-39."
+        )
+
     targets = np.full_like(raw_vectors, fill_value=float(negative_value), dtype=np.float32)
     weights = np.ones_like(raw_vectors, dtype=np.float32)
     for class_idx in range(len(CLASSES)):
         row_mask = labels == class_idx
-        col_mask = concept_labels == class_idx
-        if bool(row_mask.any()) and bool(col_mask.any()):
-            targets[np.ix_(row_mask, col_mask)] = raw_vectors[np.ix_(row_mask, col_mask)]
-            weights[np.ix_(row_mask, col_mask)] = float(positive_weight)
+        start = class_idx * CONCEPTS_PER_CLASS
+        end = start + CONCEPTS_PER_CLASS
+        if bool(row_mask.any()):
+            targets[row_mask, start:end] = raw_vectors[row_mask, start:end]
+            weights[row_mask, start:end] = float(positive_weight)
     return targets.astype(np.float32), weights.astype(np.float32)
 
 
